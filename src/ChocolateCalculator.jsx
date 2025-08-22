@@ -100,6 +100,67 @@ export default function ChocolateCalculator() {
     return weightUnit === "lbs" ? (numValue * 453.59237).toString() : numValue.toString();
   };
 
+  // --- Ingredient Management Functions ---
+  const addIngredient = () => {
+    setIngredients(prev => [
+      ...prev,
+      { 
+        name: "", 
+        weightPerBar: "", 
+        percentage: "", 
+        totalWeight: "", 
+        staticField: "weightPerBar" 
+      }
+    ]);
+  };
+
+  const removeIngredient = (indexToRemove) => {
+    if (ingredients.length <= 1) return; // Always keep at least one ingredient
+    
+    setIngredients(prev => prev.filter((_, index) => index !== indexToRemove));
+    
+    // Update autoPercentageIndex if needed
+    if (autoPercentageIndex === indexToRemove) {
+      // If removing the auto-percentage ingredient, set it to the first ingredient
+      setAutoPercentageIndex(0);
+    } else if (autoPercentageIndex > indexToRemove) {
+      // If removing an ingredient before the auto-percentage one, adjust the index
+      setAutoPercentageIndex(prev => prev - 1);
+    }
+    
+    // Clean up user-entered fields tracking for removed ingredient
+    setUserEnteredFields(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(key => {
+        const [index] = key.split('-');
+        if (parseInt(index) === indexToRemove) {
+          delete updated[key];
+        } else if (parseInt(index) > indexToRemove) {
+          // Adjust indices for ingredients that moved up
+          const [, field] = key.split('-');
+          delete updated[key];
+          updated[`${parseInt(index) - 1}-${field}`] = true;
+        }
+      });
+      return updated;
+    });
+    
+    // Clean up raw total weight inputs
+    setRawTotalWeightInputs(prev => {
+      const updated = { ...prev };
+      delete updated[indexToRemove];
+      // Shift indices for remaining ingredients
+      Object.keys(updated).forEach(key => {
+        const index = parseInt(key);
+        if (index > indexToRemove) {
+          updated[index - 1] = updated[key];
+          delete updated[key];
+        }
+      });
+      return updated;
+    });
+  };
+
   // Update the formatWeightWithUnit function to use 2 decimal places for grams too
   const formatWeightWithUnit = (grams) => {
     if (!grams || isNaN(parseFloat(grams))) return "N/A";
@@ -1118,24 +1179,38 @@ export default function ChocolateCalculator() {
                   
                   {/* Ingredient Name with numbering */}
                   <div className="flex items-center justify-between">
-                    <label className="block font-bold">
-                      Ingredient #{index + 1}
-                    </label>
-                    {isNumBarsAuto && index === 0 ? (
-                      <span className="text-sm text-gray-500 italic">Base ingredient</span>
-                    ) : null}
-                    {!isNumBarsAuto && (
-                      <label className={`flex items-center space-x-2 ${getAutoCalcStyle(index === autoPercentageIndex)}`}>
-                        <input
-                          type="radio"
-                          name="autoPercentageIngredient"
-                          checked={autoPercentageIndex === index}
-                          onChange={() => handleAutoPercentageChange(index)}
-                          disabled={!areMandatoryFieldsFilled()}
-                        />
-                        <span className="text-sm">Auto-calc</span>
+                    <div className="flex items-center space-x-2">
+                      <label className="block font-bold">
+                        Ingredient #{index + 1}
                       </label>
-                    )}
+                      {ingredients.length > 1 && (
+                        <Button 
+                          onClick={() => removeIngredient(index)}
+                          variant="destructive" 
+                          size="sm"
+                          disabled={!areMandatoryFieldsFilled()}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {isNumBarsAuto && index === 0 ? (
+                        <span className="text-sm text-gray-500 italic">Base ingredient</span>
+                      ) : null}
+                      {!isNumBarsAuto && (
+                        <label className={`flex items-center space-x-2 ${getAutoCalcStyle(index === autoPercentageIndex)}`}>
+                          <input
+                            type="radio"
+                            name="autoPercentageIngredient"
+                            checked={autoPercentageIndex === index}
+                            onChange={() => handleAutoPercentageChange(index)}
+                            disabled={!areMandatoryFieldsFilled()}
+                          />
+                          <span className="text-sm">Auto-calc</span>
+                        </label>
+                      )}
+                    </div>
                   </div>
                   <Input
                     type="text"
@@ -1442,6 +1517,18 @@ export default function ChocolateCalculator() {
                 </li>
               ))}
             </ul>
+            
+            {/* Add Ingredient Button */}
+            <div className="mt-4 flex justify-center">
+              <Button 
+                onClick={addIngredient}
+                variant="secondary"
+                className="bg-green-500 hover:bg-green-600 focus:ring-green-500"
+                disabled={!areMandatoryFieldsFilled()}
+              >
+                + Add Ingredient
+              </Button>
+            </div>
           </div>
           
           {/* Action Buttons */}
