@@ -876,7 +876,8 @@ export default function ChocolateCalculator() {
       setIngredients((prevIngredients) => {
         const newIngredients = [...prevIngredients];
         newIngredients.forEach((ingredient, index) => {
-          // Remove the index > 0 condition - all ingredients should be processed
+          // Only process ingredients where percentage is the static field
+          // Do NOT override ingredients where totalWeight is the static field
           if (ingredient.staticField === "percentage" && ingredient.percentage) {
             const percentage = parseFloat(ingredient.percentage) || 0;
             const calculatedTotalWeight = (percentage / 100) * totalBatchWeight;
@@ -944,26 +945,48 @@ export default function ChocolateCalculator() {
       const bwValue = parseFloat(barWeight); // Use the user-provided barWeight value
       
       if (bwValue > 0) {
-        // Use barWeight as the default, giving us exactly 1 bar
-        const initialBatchWeight = bwValue;
-        console.log("Setting initial batch weight to:", initialBatchWeight);
+        // Calculate the current total batch weight from existing ingredients
+        const currentTotalBatchWeight = ingredients.reduce((sum, ingredient) => {
+          return sum + (parseFloat(ingredient.totalWeight) || 0);
+        }, 0);
         
-        // Important: Update both state and ingredient in one batch
-        setTotalBatchWeight(initialBatchWeight);
-        setNumBars(1);
-        
-        // Directly set the first ingredient's total weight to match bar weight
-        setIngredients(prev => {
-          const updated = [...prev];
-          updated[0] = {
-            ...updated[0],
-            totalWeight: bwValue.toString(),
-            percentage: "100",
-            weightPerBar: bwValue.toString(),
-            staticField: "totalWeight" // Special staticField value for first ingredient in auto mode
-          };
-          return updated;
-        });
+        // If there's existing ingredient data, preserve it and use that as the batch weight
+        if (currentTotalBatchWeight > 0) {
+          console.log("Preserving existing ingredient data, total batch weight:", currentTotalBatchWeight);
+          setTotalBatchWeight(currentTotalBatchWeight);
+          
+          // Calculate number of bars based on existing total weight and bar weight
+          const calculatedBars = currentTotalBatchWeight / bwValue;
+          setNumBars(calculatedBars.toFixed(2));
+          
+          // Ensure the first ingredient uses totalWeight as the static field in auto mode
+          setIngredients(prev => {
+            const updated = [...prev];
+            updated[0] = {
+              ...updated[0],
+              staticField: "totalWeight" // Make total weight the source of truth for the base ingredient
+            };
+            return updated;
+          });
+        } else {
+          // No existing data, start with 1 bar worth of the base ingredient
+          console.log("No existing data, setting up default with bar weight:", bwValue);
+          setTotalBatchWeight(bwValue);
+          setNumBars(1);
+          
+          // Set the first ingredient to represent 100% of one bar
+          setIngredients(prev => {
+            const updated = [...prev];
+            updated[0] = {
+              ...updated[0],
+              totalWeight: bwValue.toString(),
+              percentage: "100",
+              weightPerBar: bwValue.toString(),
+              staticField: "totalWeight"
+            };
+            return updated;
+          });
+        }
       } else {
         // When no bar weight is set, initialize with blank values instead of 100g
         setTotalBatchWeight(0);
