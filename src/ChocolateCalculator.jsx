@@ -221,7 +221,9 @@ export default function ChocolateCalculator() {
       
       // If in auto mode and the total weight is cleared, recalculate the batch total
       if (isNumBarsAuto && (key === "totalWeight" || newIngredients[index].totalWeight === "")) {
-        // Trigger a recalculation of the total batch weight in the next cycle
+        // Clear active edit field to allow effects to run immediately
+        setActiveEditField({ index: null, field: null });
+        // Trigger a recalculation of the total batch weight
         setTimeout(() => {
           setIngredientChangeTrigger(prev => !prev);
         }, 0);
@@ -892,7 +894,7 @@ export default function ChocolateCalculator() {
         return newIngredients;
       });
     }
-  }, [isNumBarsAuto, totalBatchWeight, numBars, activeEditField]);
+  }, [isNumBarsAuto, totalBatchWeight, numBars, activeEditField, ingredientChangeTrigger]);
 
   // Calculate weight per bar for ingredients based on percentage in auto mode
   useEffect(() => {
@@ -927,7 +929,7 @@ export default function ChocolateCalculator() {
         return hasChanges ? newIngredients : prevIngredients;
       });
     }
-  }, [isNumBarsAuto, totalBatchWeight, numBars, activeEditField, userEnteredFields]);
+  }, [isNumBarsAuto, totalBatchWeight, numBars, activeEditField, userEnteredFields, ingredientChangeTrigger]);
 
   // Fix the auto-calculate checkbox handler and make sure it sets correct initial values
   const handleAutoCalculateChange = (e) => {
@@ -1004,7 +1006,7 @@ export default function ChocolateCalculator() {
         setTotalBatchWeight(calculatedTotalBatchWeight.toFixed(2));
       }
     }
-  }, [isNumBarsAuto, ingredients, activeEditField]);
+  }, [isNumBarsAuto, ingredients, activeEditField, ingredientChangeTrigger]);
 
   // Remove special handling for first ingredient in auto mode
   useEffect(() => {
@@ -1057,7 +1059,7 @@ export default function ChocolateCalculator() {
         return hasChanges ? newIngredients : prevIngredients;
       });
     }
-  }, [isNumBarsAuto, totalBatchWeight, numBars, activeEditField, userEnteredFields]);
+  }, [isNumBarsAuto, totalBatchWeight, numBars, activeEditField, userEnteredFields, ingredientChangeTrigger]);
 
   // Add a new effect to update percentages when an ingredient's total weight changes in auto mode
   useEffect(() => {
@@ -1089,7 +1091,7 @@ export default function ChocolateCalculator() {
         return hasChanges ? newIngredients : prevIngredients;
       });
     }
-  }, [isNumBarsAuto, totalBatchWeight, activeEditField, barWeight]);
+  }, [isNumBarsAuto, totalBatchWeight, activeEditField, barWeight, ingredientChangeTrigger]);
 
   // Add the effect for handling unit changes here, before the return statement
   useEffect(() => {
