@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background chocolate squares -->
+  <rect x="0" y="0" width="32" height="32" fill="#5a2d0c"/>
+  <rect x="32" y="0" width="32" height="32" fill="#7b3f11"/>
+  <rect x="0" y="32" width="32" height="32" fill="#6b340e"/>
+  <rect x="32" y="32" width="32" height="32" fill="#8b4f1c"/>
+
+  <!-- CBC Text -->
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="20" fill="#fff" font-weight="bold">
+    CBC
+  </text>
+</svg>

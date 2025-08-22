@@ -1,0 +1,129 @@
+
+import { useState } from "react";
+import React from "react";
+import { Card, CardContent } from "./components/ui/card";
+import { Input } from "./components/ui/input";
+import { Button } from "./components/ui/button";
+
+export default function ChocolateCalculator() {
+  const [numBars, setNumBars] = useState(0);
+  const [barWeight, setBarWeight] = useState(0);
+  const [recipeName, setRecipeName] = useState("");
+  const [savedRecipes, setSavedRecipes] = useState([]);
+  const [autoUpdateIndex, setAutoUpdateIndex] = useState(null);
+  const [ingredients, setIngredients] = useState(
+    Array(5).fill().map(() => ({ name: "", weightPerBar: "", percentage: "", totalWeight: "" }))
+  );
+
+  const totalWeight = numBars * barWeight;
+
+  const updateIngredient = (index, key, value) => {
+    const newIngredients = [...ingredients];
+    newIngredients[index][key] = value;
+
+    const enteredWeight = newIngredients.reduce((sum, ing, i) =>
+      i !== autoUpdateIndex ? sum + (parseFloat(ing.totalWeight) || 0) : sum,
+      0
+    );
+
+    const remainingWeight = totalWeight - enteredWeight;
+    if (remainingWeight < 0) return;
+
+    if (key === "weightPerBar" && value) {
+      newIngredients[index].totalWeight = (value * numBars).toFixed(2);
+      newIngredients[index].percentage = ((newIngredients[index].totalWeight / totalWeight) * 100).toFixed(2);
+    } else if (key === "percentage" && value) {
+      newIngredients[index].totalWeight = ((value / 100) * totalWeight).toFixed(2);
+      newIngredients[index].weightPerBar = (newIngredients[index].totalWeight / numBars).toFixed(2);
+    } else if (key === "totalWeight" && value) {
+      newIngredients[index].weightPerBar = (value / numBars).toFixed(2);
+      newIngredients[index].percentage = ((value / totalWeight) * 100).toFixed(2);
+    }
+
+    if (autoUpdateIndex !== null) {
+      const autoUpdateIngredient = newIngredients[autoUpdateIndex];
+      autoUpdateIngredient.totalWeight = remainingWeight.toFixed(2);
+      autoUpdateIngredient.weightPerBar = (remainingWeight / numBars).toFixed(2);
+      autoUpdateIngredient.percentage = ((remainingWeight / totalWeight) * 100).toFixed(2);
+    }
+    
+    setIngredients(newIngredients);
+  };
+
+  const saveRecipe = () => {
+    if (recipeName.trim() === "") return;
+    setSavedRecipes([...savedRecipes, { name: recipeName, numBars, barWeight, ingredients }]);
+    setRecipeName("");
+  };
+
+  return (
+    <div className="p-6 max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Chocolate Bars Ingredients Calculator</h1>
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div>
+            <label className="block">Recipe Name</label>
+            <Input type="text" value={recipeName} onChange={(e) => setRecipeName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block">Number of Bars</label>
+            <Input type="number" value={numBars} onChange={(e) => setNumBars(Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="block">Weight of Individual Bar (g)</label>
+            <Input type="number" value={barWeight} onChange={(e) => setBarWeight(Number(e.target.value))} />
+          </div>
+          <div className="mt-4 font-bold">Total Weight: {totalWeight} g</div>
+          <div>
+            <h2 className="text-lg font-semibold">Ingredients</h2>
+            <ul>
+              {ingredients.map((ingredient, index) => (
+                <li key={index} className="flex items-center space-x-4">
+                  <input
+                    type="radio"
+                    name="autoUpdate"
+                    checked={autoUpdateIndex === index}
+                    onChange={() => setAutoUpdateIndex(index)}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Ingredient Name"
+                    value={ingredient.name}
+                    onChange={(e) => updateIngredient(index, "name", e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Weight/Bar (g)"
+                    value={ingredient.weightPerBar}
+                    onChange={(e) => updateIngredient(index, "weightPerBar", e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Percentage (%)"
+                    value={ingredient.percentage}
+                    onChange={(e) => updateIngredient(index, "percentage", e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Total Weight (g)"
+                    value={ingredient.totalWeight}
+                    onChange={(e) => updateIngredient(index, "totalWeight", e.target.value)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Button onClick={saveRecipe} className="w-full">Save Recipe</Button>
+        </CardContent>
+      </Card>
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold">Saved Recipes</h2>
+        <ul>
+          {savedRecipes.map((recipe, index) => (
+            <li key={index} className="border p-2 mt-2">{recipe.name}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
