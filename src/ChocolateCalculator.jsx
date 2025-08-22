@@ -117,6 +117,16 @@ export default function ChocolateCalculator() {
   const removeIngredient = (indexToRemove) => {
     if (ingredients.length <= 1) return; // Always keep at least one ingredient
     
+    // Get the ingredient name for a more specific confirmation message
+    const ingredientName = ingredients[indexToRemove]?.name?.trim();
+    const confirmMessage = ingredientName 
+      ? `Are you sure you want to remove "${ingredientName}" (Ingredient #${indexToRemove + 1})?`
+      : `Are you sure you want to remove Ingredient #${indexToRemove + 1}?`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    
     setIngredients(prev => prev.filter((_, index) => index !== indexToRemove));
     
     // Update autoPercentageIndex if needed
@@ -476,6 +486,16 @@ export default function ChocolateCalculator() {
 
   // --- Batch Management Functions ---
   const resetBatch = () => {
+    // Check if there's any data to lose
+    const hasData = batchName.trim() !== "" || 
+                   numBars !== "" || 
+                   barWeight !== "" || 
+                   ingredients.some(ing => ing.name || ing.weightPerBar || ing.percentage || ing.totalWeight);
+    
+    if (hasData && !window.confirm("Are you sure you want to reset all data? This will clear all current batch information and cannot be undone.")) {
+      return;
+    }
+    
     setNumBars("");
     setBarWeight("");
     setBatchName("");
@@ -567,6 +587,16 @@ export default function ChocolateCalculator() {
   // Update restoreBatch function to set the current batch ID
   const restoreBatch = (batch) => {
     if (batch) {
+      // Check if there's any unsaved data that would be overwritten
+      const hasUnsavedData = batchName.trim() !== "" || 
+                            numBars !== "" || 
+                            barWeight !== "" || 
+                            ingredients.some(ing => ing.name || ing.weightPerBar || ing.percentage || ing.totalWeight);
+      
+      if (hasUnsavedData && !window.confirm(`Are you sure you want to restore "${batch.batchName}"? This will overwrite your current unsaved work.`)) {
+        return;
+      }
+      
       setBatchName(batch.batchName);
       setNumBars(batch.numBars);
       setBarWeight(batch.barWeight);
@@ -600,7 +630,11 @@ export default function ChocolateCalculator() {
 
   // Update deleteBatch function to clear current batch ID if deleting current batch
   const deleteBatch = async (batchId) => {
-    if (!window.confirm("Are you sure you want to delete this batch?")) {
+    // Find the batch name for a more specific confirmation message
+    const batchToDelete = savedBatches.find(batch => batch.id === batchId);
+    const batchName = batchToDelete?.batchName || "this batch";
+    
+    if (!window.confirm(`Are you sure you want to delete "${batchName}"? This action cannot be undone.`)) {
       return;
     }
     
